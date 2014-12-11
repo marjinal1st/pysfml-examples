@@ -9,6 +9,7 @@ WTITLE = "PySFML Pong"
 PADDLE_SPEED = 10.0
 MAX_BALL_SPEED = 2500.0
 
+
 def run():
     window = sf.RenderWindow(sf.VideoMode(WWIDTH, WHEIGHT), WTITLE)
     window.framerate_limit = 60
@@ -110,7 +111,6 @@ def run():
         ball.move(speed * elapsed)
 
         if ball.position.x < ball.origin.x or ball.position.x > WWIDTH - ball.origin.x:
-            #speed = sf.Vector2(speed.x * -1.0, speed.y)
             scored = True
 
             if ball.position.x < ball.origin.x:
@@ -135,7 +135,6 @@ def run():
             x_factor = (1.0, 1.05)[-MAX_BALL_SPEED < speed.x < MAX_BALL_SPEED]
             
             speed = sf.Vector2(speed.x * -1.0 * x_factor, speed.y * y)
-
 
         p2_col = ball.global_bounds.intersects(paddle_2.global_bounds)
         if p2_col:

@@ -1,5 +1,5 @@
 # Python SFML Examples
 
-Sample games written in PySML.
+Sample games/apps written in PySML.
 
-Assets are from [**Kenney Donation Pack**](http://kenney.nl/assets)
+Some assets are from [**Kenney Donation Pack**](http://kenney.nl/assets)
