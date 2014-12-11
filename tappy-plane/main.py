@@ -3,19 +3,21 @@
 
 import sfml as sf
 import sys
+from animation import *
 
 WWIDTH, WHEIGHT = 800, 480
 WTITLE = "PySFML - Tappy Plane"
 GROUND_SPEED = 200
 SETTINGS = sf.ContextSettings()
 SETTINGS.antialiasing_level = 8
-GRAVITY = 90
+GRAVITY = 10.0
 
 
 class Game:
     def __init__(self):
         # Window
-        self.window = sf.RenderWindow(sf.VideoMode(WWIDTH, WHEIGHT), WTITLE, sf.Style.CLOSE | sf.Style.TITLEBAR, SETTINGS)
+        self.window = sf.RenderWindow(sf.VideoMode(WWIDTH, WHEIGHT), WTITLE, sf.Style.CLOSE | sf.Style.TITLEBAR,
+                                      SETTINGS)
         self.window.framerate_limit = 60
 
         # Clock
@@ -28,18 +30,31 @@ class Game:
         # Loading assets
         self.load_assets()
 
-        self.background = sf.Sprite(self.bg_texture)
+        self.backgrounds = [sf.Sprite(self.bg_texture) for i in xrange(2)]
         self.grounds = [sf.Sprite(self.ground_texture) for i in xrange(2)]
 
         self.grounds[0].position = 0, 409
         self.grounds[1].position = 0, 409
 
-        self.plane = sf.Sprite(self.plane_texture)
+        # Plane
+        fly_anim = Animation()
+        fly_anim.texture = self.plane_sheet
+        fly_anim.add_frame(sf.Rectangle((0, 0), (88, 73)))
+        fly_anim.add_frame(sf.Rectangle((88, 0), (88, 73)))
+        fly_anim.add_frame(sf.Rectangle((176, 0), (88, 73)))
+        fly_anim.add_frame(sf.Rectangle((88, 0), (88, 73)))
+
+        self.plane = AnimatedSprite(sf.seconds(0.2), False, True)
+        self.plane.play(fly_anim)
         self.plane.origin = self.plane.global_bounds.width / 2.0, self.plane.global_bounds.height / 2.0
 
         self.plane.position = sf.Vector2(150, 200)
 
-        self.jumped = False
+        self.plane_speed = sf.Vector2(0.0, 0.0)
+
+        self.jump_time = None
+
+        self.plane_jumped = False
 
     def run(self):
         while self.window.is_open:
@@ -56,9 +71,18 @@ class Game:
         if type(event) is sf.CloseEvent:
             self.window.close()
         if type(event) is sf.KeyEvent and event.code is sf.Keyboard.SPACE:
-            self.jumped = True
+            self.plane_jumped = True
+            self.jump_time = sf.Clock()
 
     def update(self, elapsed_time):
+        # Backgrounds
+        self.backgrounds[0].move(sf.Vector2(-GROUND_SPEED / 10.0, 0.0) * elapsed_time)
+        self.backgrounds[1].position = self.backgrounds[0].position + \
+                                       sf.Vector2(self.backgrounds[0].global_bounds.width, 0)
+
+        if self.backgrounds[0].position.x <= -WWIDTH:
+            self.backgrounds[0], self.backgrounds[1] = self.backgrounds[1], self.backgrounds[0]
+
         # Grounds
         self.grounds[0].move(sf.Vector2(-GROUND_SPEED, 0) * elapsed_time)
         self.grounds[1].position = self.grounds[0].position + sf.Vector2(self.grounds[0].global_bounds.width, 0)
@@ -67,19 +91,31 @@ class Game:
             self.grounds[0], self.grounds[1] = self.grounds[1], self.grounds[0]
 
         # Plane
-        if self.jumped:
-            self.plane.move(sf.Vector2(0.0, 10 * -GRAVITY) * elapsed_time)
-            self.jumped = False
+        if not self.plane_jumped and (self.plane.rotation <= 60 or self.plane.rotation >= 300):
+            self.plane.rotate(1.25)
 
-        self.plane.move(sf.Vector2(0.0, GRAVITY) * elapsed_time)
+        if self.plane_jumped:
+            self.plane_speed = sf.Vector2(0.0, -150.0)
 
-        if self.plane.rotation <= 85:
-            self.plane.rotate(1)
+            if self.jump_time.elapsed_time.seconds < 0.25:
+                self.plane.rotate(-2.5)
+            else:
+                self.plane_jumped = False
+                self.jump_time = None
+            if self.plane.rotation % 300 > 60:
+                self.plane.rotation = (300, 60)[self.plane.rotation > 300]
+
+        if self.plane_speed.y <= 50 * GRAVITY:
+            self.plane_speed += sf.Vector2(0.0, GRAVITY)
+
+        self.plane.move(self.plane_speed * elapsed_time)
+        self.plane.update(sf.seconds(elapsed_time))
 
     def render(self):
         self.window.clear()
 
-        self.window.draw(self.background)
+        for i in self.backgrounds:
+            self.window.draw(i)
 
         for i in self.grounds:
             self.window.draw(i)
@@ -92,7 +128,7 @@ class Game:
         try:
             self.bg_texture = sf.Texture.from_file("assets/images/background.png")
             self.ground_texture = sf.Texture.from_file("assets/images/ground.png")
-            self.plane_texture = sf.Texture.from_file("assets/images/plane.png")
+            self.plane_sheet = sf.Texture.from_file("assets/images/plane_sheet.png")
         except IOError:
             sys.exit(1)
 
