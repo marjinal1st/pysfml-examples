@@ -56,6 +56,10 @@ class Game:
 
         self.plane_jumped = False
 
+        # Rocks
+        self.rocks = []
+        self.spawn_rocks()
+
     def run(self):
         while self.window.is_open:
             for event in self.window.events:
@@ -111,10 +115,36 @@ class Game:
         self.plane.move(self.plane_speed * elapsed_time)
         self.plane.update(sf.seconds(elapsed_time))
 
+        # Rocks
+        if len(self.rocks) > 0:
+            self.rocks[0].move(sf.Vector2(-GROUND_SPEED, 0.0) * elapsed_time)
+            self.rocks[1].position = sf.Vector2(self.rocks[0].position.x + 300,
+                                                WHEIGHT - self.rocks[0].global_bounds.height)
+
+            if self.rocks[1].position.x <= -self.rocks[1].global_bounds.width:
+                for i in xrange(2):
+                    self.rocks.pop(0)
+                self.spawn_rocks()
+
+    def spawn_rocks(self):
+        if len(self.rocks) == 0:
+            rock_down = sf.Sprite(self.rock_down)
+            rock_down.position = sf.Vector2(float(WWIDTH), 0.0)
+            self.rocks.append(rock_down)
+
+            rock_up = sf.Sprite(self.rock_up)
+            rock_up.position = sf.Vector2(rock_up.position.x + 300.0, float(WHEIGHT - rock_up.global_bounds.height))
+            self.rocks.append(rock_up)
+        else:
+            print("Boş değil")
+
     def render(self):
         self.window.clear()
 
         for i in self.backgrounds:
+            self.window.draw(i)
+
+        for i in self.rocks:
             self.window.draw(i)
 
         for i in self.grounds:
@@ -129,6 +159,8 @@ class Game:
             self.bg_texture = sf.Texture.from_file("assets/images/background.png")
             self.ground_texture = sf.Texture.from_file("assets/images/ground.png")
             self.plane_sheet = sf.Texture.from_file("assets/images/plane_sheet.png")
+            self.rock_up = sf.Texture.from_file("assets/images/rock-up.png")
+            self.rock_down = sf.Texture.from_file("assets/images/rock-down.png")
         except IOError:
             sys.exit(1)
 
